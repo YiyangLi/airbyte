@@ -2,15 +2,19 @@
 # Copyright (c) 2022 Airbyte, Inc., all rights reserved.
 #
 
+import logging
 from typing import Any, Mapping, Tuple
 
 from urllib import parse
 from airbyte_cdk.sources.streams.http.requests_native_auth import Oauth2Authenticator
+import pendulum
+import requests
+
+logger = logging.getLogger("airbyte")
 
 class Auth0Oauth2Authenticator(Oauth2Authenticator):
-    def __init__(self, base_url: str, audience: str, **kwargs):
-        super().__init__(**kwargs)
-        self.token_refresh_endpoint = parse.urljoin(base_url, f"/oauth/token")
+    def __init__(self, base_url: str, audience: str, client_id: str, client_secret: str):
+        super().__init__(parse.urljoin(base_url, "/oauth/token"), client_id, client_secret, "")
         self.audience = audience.rstrip("/") + "/"
 
     def build_refresh_request_body(self) -> Mapping[str, Any]:

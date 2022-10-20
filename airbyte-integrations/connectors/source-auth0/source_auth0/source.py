@@ -4,11 +4,12 @@
 
 
 from abc import ABC, abstractmethod
+import logging
 from sys import api_version
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Tuple
 from urllib import parse
-import pendulum
 
+import pendulum
 import requests
 from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import Stream
@@ -17,34 +18,18 @@ from airbyte_cdk.sources.streams.http.auth import TokenAuthenticator
 
 from source_auth0.utils import datetime_to_string, get_api_endpoint, initialize_authenticator
 
-"""
-TODO: Most comments in this class are instructive and should be deleted after the source is implemented.
-
-This file provides a stubbed example of how to use the Airbyte CDK to develop both a source connector which supports full refresh or and an
-incremental syncs from an HTTP API.
-
-The various TODOs are both implementation hints and steps - fulfilling all the TODOs should be sufficient to implement one basic and one incremental
-stream from a source. This pattern is the same one used by Airbyte internally to implement connectors.
-
-The approach here is not authoritative, and devs are free to use their own judgement.
-
-There are additional required TODOs in the files within the integration_tests folder and the spec.yaml file.
-"""
-
-
 # Basic full refresh stream
 class Auth0Stream(HttpStream, ABC):
     api_version = "v2"
     page_size = 50
     resource_name = "entities"
 
-    @property
-    def path(self, **kwargs) -> str:
-        return self.resource_name
-
     def __init__(self, base_url: str, **kwargs):
         super().__init__(**kwargs)
         self.api_endpoint = get_api_endpoint(base_url, self.api_version)
+
+    def path(self, **kwargs) -> str:
+        return self.resource_name
 
     @property
     def url_base(self) -> str:
@@ -83,7 +68,8 @@ class Auth0Stream(HttpStream, ABC):
         }
 
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
-        yield from response.json()[self.resource_name]
+        print(response.json())
+        yield from response.json().get(self.resource_name)
 
 # Basic incremental stream
 class IncrementalAuth0Stream(Auth0Stream, ABC):
@@ -95,7 +81,7 @@ class IncrementalAuth0Stream(Auth0Stream, ABC):
         pass
 
     def get_updated_state(self, current_stream_state: MutableMapping[str, Any], latest_record: Mapping[str, Any]) -> Mapping[str, Any]:
-        min_cursor_value = self.min_id if self.min_id else str(pendulum.datetime.min)
+        min_cursor_value = self.min_id if self.min_id else datetime_to_string(pendulum.DateTime.min)
         return {
             self.cursor_field: max(
                 latest_record.get(self.cursor_field, min_cursor_value),
@@ -113,6 +99,7 @@ class IncrementalAuth0Stream(Auth0Stream, ABC):
         # cursor_field:1 means acending, cursor_field:-1 means decending
         filter_param = {"sort": f'{self.cursor_field}:1'}
         params.update(filter_param)
+        return params
 
 
 class Users(IncrementalAuth0Stream):
@@ -122,12 +109,11 @@ class Users(IncrementalAuth0Stream):
 
 # Source
 class SourceAuth0(AbstractSource):
-    def check_connection(self, logger, config) -> Tuple[bool, any]:
+    def check_connection(self, logger: logging.Logger, config: Mapping[str, Any]) -> Tuple[bool, any]:
         try:
             auth = initialize_authenticator(config)
-            api_endpoint = get_api_endpoint(config["base_url"], "v2")
+            api_endpoint = get_api_endpoint(config.get("base_url"), "v2")
             url = parse.urljoin(api_endpoint, "users")
-
             response = requests.get(
                 url,
                 params={"per_page": 1},
@@ -139,12 +125,13 @@ class SourceAuth0(AbstractSource):
 
             return False, response.json()
         except Exception:
+            
             return False, "Failed to authenticate with the provided credentials"
 
     def streams(self, config: Mapping[str, Any]) -> List[Stream]:
         auth = initialize_authenticator(config)
         
-        initialization_params = {"authenticator": auth, "base_url": config["base_url"]}
+        initialization_params = {"authenticator": auth, "base_url": config.get("base_url")}
         return [
           Users(**initialization_params)
         ]
