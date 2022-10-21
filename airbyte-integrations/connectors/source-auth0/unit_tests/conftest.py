@@ -39,7 +39,7 @@ def oauth_config(url_base):
 
 
 @pytest.fixture()
-def wrong_oauth_config_bad_credentials_record():
+def wrong_oauth_config_bad_credentials_record(url_base):
     """
     Malformed Credentials for oauth2.0 authorization
     credentials -> credential
@@ -50,12 +50,12 @@ def wrong_oauth_config_bad_credentials_record():
             "client_secret": "test_client_secret",
             "client_id": "test_client_id",
         },
-        "base_url": url_base(),
+        "base_url": url_base,
     }
 
 
 @pytest.fixture()
-def wrong_oauth_config_bad_auth_type():
+def wrong_oauth_config_bad_auth_type(url_base):
     """
     Wrong Credentials format for oauth2.0 authorization
     absent "auth_type" field
@@ -66,16 +66,22 @@ def wrong_oauth_config_bad_auth_type():
             "client_id": "test_client_id",
             "refresh_token": "test_refresh_token",
         },
-        "base_url": url_base(),
+        "base_url": url_base,
     }
 
 
 @pytest.fixture()
-def token_config():
+def token_config(url_base):
     """
     Just test 'token'
     """
-    return {"token": "test_token", "start_date": "2021-03-21T20:49:13Z"}
+    return {
+        "credentials": {
+            "auth_type": "oauth2_access_token",
+            "access_token": "test-token"
+        },
+        "base_url": url_base,
+    }
 
 
 @pytest.fixture()
