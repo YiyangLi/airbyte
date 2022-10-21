@@ -72,7 +72,7 @@ class Auth0Stream(HttpStream, ABC):
         if response.status_code == requests.codes.TOO_MANY_REQUESTS:
             next_reset_epoch = int(response.headers["x-ratelimit-reset"])
             next_reset = pendulum.from_timestamp(next_reset_epoch)
-            next_reset_duration = pendulum.now('UTC').diff(next_reset)
+            next_reset_duration = pendulum.now("UTC").diff(next_reset)
             return next_reset_duration.seconds
 
 

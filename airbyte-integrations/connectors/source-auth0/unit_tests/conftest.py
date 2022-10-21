@@ -80,6 +80,7 @@ def token_config(url_base):
         "base_url": url_base,
     }
 
+
 @pytest.fixture()
 def user_status_filter():
     statuses = ["ACTIVE", "DEPROVISIONED", "LOCKED_OUT", "PASSWORD_EXPIRED", "PROVISIONED", "RECOVERY", "STAGED", "SUSPENDED"]
@@ -103,7 +104,7 @@ def users_instance():
                 "user_id": "15164a44-8064-4ef9-ac31-fb08814da3f9",
                 "connection": "Username-Password-Authentication",
                 "provider": "auth0",
-                "isSocial": False
+                "isSocial": False,
             }
         ],
         "name": "Linda Sporer IV",
@@ -112,8 +113,9 @@ def users_instance():
         "updated_at": "2022-10-21T04:10:34.240Z",
         "user_id": "auth0|15164a44-8064-4ef9-ac31-fb08814da3f9",
         "user_metadata": {},
-        "app_metadata": {}
+        "app_metadata": {},
     }
+
 
 @pytest.fixture()
 def latest_record_instance():

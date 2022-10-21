@@ -2,19 +2,15 @@
 # Copyright (c) 2022 Airbyte, Inc., all rights reserved.
 #
 
-from http import HTTPStatus
+import time
 from abc import ABC
 from unittest.mock import MagicMock
 
-import time
 import pytest
 import requests
 from airbyte_cdk.models import SyncMode
-from source_auth0.source import (
-    Users,
-    Auth0Stream,
-    IncrementalAuth0Stream,
-)
+from source_auth0.source import Auth0Stream, IncrementalAuth0Stream, Users
+
 
 @pytest.fixture
 def patch_base_class(mocker):
@@ -40,7 +36,7 @@ class TestAuth0Stream:
 
     def test_auth0_stream_parse_response(self, patch_base_class, requests_mock, url_base, api_url):
         stream = Auth0Stream(url_base=url_base)
-        requests_mock.get(f"{api_url}", json={ "entities": [{"a": 123}, {"b": "xx"}] })
+        requests_mock.get(f"{api_url}", json={"entities": [{"a": 123}, {"b": "xx"}]})
         resp = requests.get(f"{api_url}")
         inputs = {"response": resp, "stream_state": MagicMock()}
         expected_parsed_object = [{"a": 123}, {"b": "xx"}]
@@ -109,8 +105,7 @@ class TestAuth0Stream:
     def test_auth0_stream_http_method(self, patch_base_class, url_base):
         stream = Auth0Stream(url_base=url_base)
         expected_method = "GET"
-        assert stream.http_method == expected_method 
-
+        assert stream.http_method == expected_method
 
 
 class TestNextPageToken:
@@ -125,7 +120,7 @@ class TestNextPageToken:
         response = MagicMock(requests.Response)
         response.json = MagicMock(return_value=json)
         inputs = {"response": response}
-        expected_token = {'page': 1, 'per_page': 50}
+        expected_token = {"page": 1, "per_page": 50}
         result = stream.next_page_token(**inputs)
         assert result == expected_token
 
@@ -171,7 +166,7 @@ class TestNextPageToken:
         expected_token = None
         result = stream.next_page_token(**inputs)
         assert result == expected_token
-    
+
     def test_next_page_token_last_page_incomplete(self, patch_base_class, url_base):
         stream = Auth0Stream(url_base=url_base)
         json = {
@@ -202,16 +197,20 @@ class TestNextPageToken:
         result = stream.next_page_token(**inputs)
         assert result == expected_token
 
+
 class TestStreamUsers:
     def test_stream_users(self, patch_base_class, users_instance, url_base, api_url, requests_mock):
         stream = Users(url_base=url_base)
-        requests_mock.get(f"{api_url}/users", json={
-            "start": 0,
-            "limit": 50,
-            "length": 1,
-            "users": [users_instance],
-            "total": 1,
-        })
+        requests_mock.get(
+            f"{api_url}/users",
+            json={
+                "start": 0,
+                "limit": 50,
+                "length": 1,
+                "users": [users_instance],
+                "total": 1,
+            },
+        )
         inputs = {"sync_mode": SyncMode.incremental}
         assert list(stream.read_records(**inputs)) == [users_instance]
 
@@ -219,32 +218,34 @@ class TestStreamUsers:
         stream = Users(url_base=url_base)
         inputs = {"stream_slice": None, "stream_state": None, "next_page_token": None}
         expected_params = {
-            'include_totals': 'true',
-            'page': 0,
-            'per_page': 50,
-            'sort': 'updated_at:1',
+            "include_totals": "true",
+            "page": 0,
+            "per_page": 50,
+            "sort": "updated_at:1",
         }
         assert stream.request_params(**inputs) == expected_params
 
     def test_users_source_request_params_have_next_cursor(self, patch_base_class, url_base):
         stream = Users(url_base=url_base)
-        inputs = {"stream_slice": None, "stream_state": None, "next_page_token": {'page': 1, 'per_page': 50}}
+        inputs = {"stream_slice": None, "stream_state": None, "next_page_token": {"page": 1, "per_page": 50}}
         expected_params = {
-            'include_totals': 'true',
-            'page': 1,
-            'per_page': 50,
-            'sort': 'updated_at:1',
+            "include_totals": "true",
+            "page": 1,
+            "per_page": 50,
+            "sort": "updated_at:1",
         }
         assert stream.request_params(**inputs) == expected_params
 
     def test_users_source_parse_response(self, requests_mock, patch_base_class, users_instance, url_base, api_url):
         stream = Users(url_base=url_base)
-        requests_mock.get(f"{api_url}/users", json={
-            "start": 0,
-            "limit": 50,
-            "length": 1,
-            "users": [users_instance],
-            "total": 1,
-        })
+        requests_mock.get(
+            f"{api_url}/users",
+            json={
+                "start": 0,
+                "limit": 50,
+                "length": 1,
+                "users": [users_instance],
+                "total": 1,
+            },
+        )
         assert list(stream.parse_response(response=requests.get(f"{api_url}/users"))) == [users_instance]
-
