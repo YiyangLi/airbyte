@@ -3,10 +3,9 @@
 #
 
 
-from abc import ABC, abstractmethod
 import logging
-from sys import api_version
-from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Tuple
+from abc import ABC, abstractmethod
+from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple
 from urllib import parse
 
 import pendulum
@@ -14,9 +13,8 @@ import requests
 from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import Stream
 from airbyte_cdk.sources.streams.http import HttpStream
-from airbyte_cdk.sources.streams.http.auth import TokenAuthenticator
-
 from source_auth0.utils import datetime_to_string, get_api_endpoint, initialize_authenticator
+
 
 # Basic full refresh stream
 class Auth0Stream(HttpStream, ABC):
@@ -33,7 +31,7 @@ class Auth0Stream(HttpStream, ABC):
 
     @property
     def url_base(self) -> str:
-      return self.api_endpoint
+        return self.api_endpoint
 
     def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
         body = response.json()
@@ -41,20 +39,20 @@ class Auth0Stream(HttpStream, ABC):
         limit = body["limit"]
         length = body["length"]
         if "start" in body and "limit" in body and "length" in body and "total" in body:
-          try:
-            start = int(body["start"])
-            limit = int(body["limit"])
-            length = int(body["length"])
-            total = int(body["total"])
-            if length < limit or (start + 1) * limit == total:
-              return None
-            else:
-              return {
-                "page": start + 1,
-                "per_page": limit,
-              }
-          except:
-            return None
+            try:
+                start = int(body["start"])
+                limit = int(body["limit"])
+                length = int(body["length"])
+                total = int(body["total"])
+                if length < limit or (start + 1) * limit == total:
+                    return None
+                else:
+                    return {
+                        "page": start + 1,
+                        "per_page": limit,
+                    }
+            except Exception:
+                return None
         return None
 
     def request_params(
@@ -70,6 +68,7 @@ class Auth0Stream(HttpStream, ABC):
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         print(response.json())
         yield from response.json().get(self.resource_name)
+
 
 # Basic incremental stream
 class IncrementalAuth0Stream(Auth0Stream, ABC):
@@ -97,7 +96,7 @@ class IncrementalAuth0Stream(Auth0Stream, ABC):
     ) -> MutableMapping[str, Any]:
         params = super().request_params(stream_state, stream_slice, next_page_token)
         # cursor_field:1 means acending, cursor_field:-1 means decending
-        filter_param = {"sort": f'{self.cursor_field}:1'}
+        filter_param = {"sort": f"{self.cursor_field}:1"}
         params.update(filter_param)
         return params
 
@@ -106,6 +105,7 @@ class Users(IncrementalAuth0Stream):
     primary_key = "user_id"
     resource_name = "users"
     cursor_field = "updated_at"
+
 
 # Source
 class SourceAuth0(AbstractSource):
@@ -125,14 +125,9 @@ class SourceAuth0(AbstractSource):
 
             return False, response.json()
         except Exception:
-            
+
             return False, "Failed to authenticate with the provided credentials"
 
     def streams(self, config: Mapping[str, Any]) -> List[Stream]:
-        initialization_params = {
-            "authenticator": initialize_authenticator(config),
-            "base_url": config.get("base_url")
-        }
-        return [
-            Users(**initialization_params)
-        ]
+        initialization_params = {"authenticator": initialize_authenticator(config), "base_url": config.get("base_url")}
+        return [Users(**initialization_params)]

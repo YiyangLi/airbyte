@@ -32,7 +32,7 @@ def oauth_config(url_base):
             "auth_type": "oauth2_confidential_application",
             "client_secret": "test_client_secret",
             "client_id": "test_client_id",
-            "audience": f"{url_base}/api/v2"
+            "audience": f"{url_base}/api/v2",
         },
         "base_url": url_base,
     }
@@ -76,10 +76,7 @@ def token_config(url_base):
     Just test 'token'
     """
     return {
-        "credentials": {
-            "auth_type": "oauth2_access_token",
-            "access_token": "test-token"
-        },
+        "credentials": {"auth_type": "oauth2_access_token", "access_token": "test-token"},
         "base_url": url_base,
     }
 

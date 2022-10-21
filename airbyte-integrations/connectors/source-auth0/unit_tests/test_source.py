@@ -6,11 +6,9 @@ from unittest.mock import MagicMock
 
 from airbyte_cdk.sources.streams.http.requests_native_auth.token import TokenAuthenticator
 from source_auth0.authenticator import Auth0Oauth2Authenticator
-from source_auth0.source import (
-    SourceAuth0,
-    Users,
-    initialize_authenticator
-)
+from source_auth0.source import SourceAuth0, Users, initialize_authenticator
+
+
 class TestAuthentication:
     def test_init_token_authentication_init(self, token_config):
         token_auth = initialize_authenticator(config=token_config)
@@ -50,7 +48,7 @@ class TestAuthentication:
         requests_mock.post(f"{api_url}/oauth/token", json={"access_token": "test_token", "expires_in": 948})
 
         assert source_auth0.check_connection(logger=MagicMock(), config=oauth_config) == (False, {})
-    
+
     def test_check_connection_error_with_exception(
         self, requests_mock, oauth_config, api_url, error_failed_to_authorize_with_provided_credentials
     ):
@@ -76,6 +74,7 @@ class TestAuthentication:
         streams = source_auth0.streams(config=oauth_config)
         for i, _ in enumerate([Users]):
             assert isinstance(streams[i], _)
+
 
 # def test_check_connection(mocker):
 #     source = SourceAuth0()
