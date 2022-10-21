@@ -30,34 +30,34 @@ class TestAuthentication:
         except Exception as e:
             assert e.args[0] == "Config validation error. `auth_type` not specified."
 
-    def test_check_connection_ok(self, requests_mock, oauth_config, api_url):
+    def test_check_connection_ok(self, requests_mock, oauth_config, url_base):
         oauth_auth = initialize_authenticator(config=oauth_config)
         assert isinstance(oauth_auth, Auth0Oauth2Authenticator)
 
         source_auth0 = SourceAuth0()
-        requests_mock.get(f"{api_url}/api/v2/users?per_page=1", json={"connect": "ok"})
-        requests_mock.post(f"{api_url}/oauth/token", json={"access_token": "test_token", "expires_in": 948})
+        requests_mock.get(f"{url_base}/api/v2/users?per_page=1", json={"connect": "ok"})
+        requests_mock.post(f"{url_base}/oauth/token", json={"access_token": "test_token", "expires_in": 948})
         assert source_auth0.check_connection(logger=MagicMock(), config=oauth_config) == (True, None)
 
-    def test_check_connection_error_status_code(self, requests_mock, oauth_config, api_url):
+    def test_check_connection_error_status_code(self, requests_mock, oauth_config, url_base):
         oauth_auth = initialize_authenticator(config=oauth_config)
         assert isinstance(oauth_auth, Auth0Oauth2Authenticator)
 
         source_auth0 = SourceAuth0()
-        requests_mock.get(f"{api_url}/api/v2/users?per_page=1", status_code=400, json={})
-        requests_mock.post(f"{api_url}/oauth/token", json={"access_token": "test_token", "expires_in": 948})
+        requests_mock.get(f"{url_base}/api/v2/users?per_page=1", status_code=400, json={})
+        requests_mock.post(f"{url_base}/oauth/token", json={"access_token": "test_token", "expires_in": 948})
 
         assert source_auth0.check_connection(logger=MagicMock(), config=oauth_config) == (False, {})
 
     def test_check_connection_error_with_exception(
-        self, requests_mock, oauth_config, api_url, error_failed_to_authorize_with_provided_credentials
+        self, requests_mock, oauth_config, url_base, error_failed_to_authorize_with_provided_credentials
     ):
         oauth_auth = initialize_authenticator(config=oauth_config)
         assert isinstance(oauth_auth, Auth0Oauth2Authenticator)
 
         source_auth0 = SourceAuth0()
-        requests_mock.get(f"{api_url}/api/v2/users?per_page=1", status_code=400, json="ss")
-        requests_mock.post(f"{api_url}/oauth/token", json={"access_token": "test_token", "expires_in": 948})
+        requests_mock.get(f"{url_base}/api/v2/users?per_page=1", status_code=400, json="ss")
+        requests_mock.post(f"{url_base}/oauth/token", json={"access_token": "test_token", "expires_in": 948})
 
         assert source_auth0.check_connection(logger=MagicMock(), config="wrong_config") == (
             False,

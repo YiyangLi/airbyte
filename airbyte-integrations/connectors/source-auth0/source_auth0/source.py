@@ -22,9 +22,9 @@ class Auth0Stream(HttpStream, ABC):
     page_size = 50
     resource_name = "entities"
 
-    def __init__(self, base_url: str, **kwargs):
+    def __init__(self, url_base: str, **kwargs):
         super().__init__(**kwargs)
-        self.api_endpoint = get_api_endpoint(base_url, self.api_version)
+        self.api_endpoint = get_api_endpoint(url_base, self.api_version)
 
     def path(self, **kwargs) -> str:
         return self.resource_name
@@ -35,9 +35,6 @@ class Auth0Stream(HttpStream, ABC):
 
     def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
         body = response.json()
-        start = body["start"]
-        limit = body["limit"]
-        length = body["length"]
         if "start" in body and "limit" in body and "length" in body and "total" in body:
             try:
                 start = int(body["start"])
@@ -68,6 +65,15 @@ class Auth0Stream(HttpStream, ABC):
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         print(response.json())
         yield from response.json().get(self.resource_name)
+
+    def backoff_time(self, response: requests.Response) -> Optional[float]:
+        # The rate limit resets on the timestamp indicated
+        # https://auth0.com/docs/troubleshoot/customer-support/operational-policies/rate-limit-policy/management-api-endpoint-rate-limits
+        if response.status_code == requests.codes.TOO_MANY_REQUESTS:
+            next_reset_epoch = int(response.headers["x-ratelimit-reset"])
+            next_reset = pendulum.from_timestamp(next_reset_epoch)
+            next_reset_duration = pendulum.now('UTC').diff(next_reset)
+            return next_reset_duration.seconds
 
 
 # Basic incremental stream
@@ -129,5 +135,5 @@ class SourceAuth0(AbstractSource):
             return False, "Failed to authenticate with the provided credentials"
 
     def streams(self, config: Mapping[str, Any]) -> List[Stream]:
-        initialization_params = {"authenticator": initialize_authenticator(config), "base_url": config.get("base_url")}
+        initialization_params = {"authenticator": initialize_authenticator(config), "url_base": config.get("base_url")}
         return [Users(**initialization_params)]
