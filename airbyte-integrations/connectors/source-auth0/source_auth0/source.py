@@ -41,11 +41,12 @@ class Auth0Stream(HttpStream, ABC):
                 limit = int(body["limit"])
                 length = int(body["length"])
                 total = int(body["total"])
-                if length < limit or (start + 1) * limit == total:
+                current = start // limit
+                if length < limit or (start + length) == total:
                     return None
                 else:
                     return {
-                        "page": start + 1,
+                        "page": current + 1,
                         "per_page": limit,
                     }
             except Exception:
@@ -87,6 +88,7 @@ class IncrementalAuth0Stream(Auth0Stream, ABC):
 
     def get_updated_state(self, current_stream_state: MutableMapping[str, Any], latest_record: Mapping[str, Any]) -> Mapping[str, Any]:
         min_cursor_value = self.min_id if self.min_id else datetime_to_string(pendulum.DateTime.min)
+        print(self.cursor_field)
         return {
             self.cursor_field: max(
                 latest_record.get(self.cursor_field, min_cursor_value),
@@ -108,6 +110,7 @@ class IncrementalAuth0Stream(Auth0Stream, ABC):
 
 
 class Users(IncrementalAuth0Stream):
+    min_id = datetime_to_string(pendulum.DateTime.min)
     primary_key = "user_id"
     resource_name = "users"
     cursor_field = "updated_at"

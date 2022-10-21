@@ -32,8 +32,11 @@
       "type": ["string", "null"]
     },
     "identities": {
-      "type": ["object", "null"],
-      "additionalProperties": true
+      "type": "array",
+      "items": {
+        "type": ["object", "null"],
+        "additionalProperties": true
+      }
     },
     "app_metadata": {
       "type": ["object", "null"],

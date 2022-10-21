@@ -170,7 +170,7 @@ class TestNextPageToken:
     def test_next_page_token_last_page_incomplete(self, patch_base_class, url_base):
         stream = Auth0Stream(url_base=url_base)
         json = {
-            "start": "1",
+            "start": "50",
             "limit": 50,
             "length": "1",
             "total": 51,
@@ -185,7 +185,7 @@ class TestNextPageToken:
     def test_next_page_token_last_page_complete(self, patch_base_class, url_base):
         stream = Auth0Stream(url_base=url_base)
         json = {
-            "start": "1",
+            "start": "50",
             "limit": 50,
             "length": "50",
             "total": 100,
