@@ -129,9 +129,10 @@ class SourceAuth0(AbstractSource):
             return False, "Failed to authenticate with the provided credentials"
 
     def streams(self, config: Mapping[str, Any]) -> List[Stream]:
-        auth = initialize_authenticator(config)
-        
-        initialization_params = {"authenticator": auth, "base_url": config.get("base_url")}
+        initialization_params = {
+            "authenticator": initialize_authenticator(config),
+            "base_url": config.get("base_url")
+        }
         return [
-          Users(**initialization_params)
+            Users(**initialization_params)
         ]
