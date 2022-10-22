@@ -19,7 +19,7 @@ from source_auth0.utils import datetime_to_string, get_api_endpoint, initialize_
 # Basic full refresh stream
 class Auth0Stream(HttpStream, ABC):
     api_version = "v2"
-    page_size = 50
+    page_size = 10
     resource_name = "entities"
 
     def __init__(self, url_base: str, **kwargs):
@@ -45,10 +45,13 @@ class Auth0Stream(HttpStream, ABC):
                 if length < limit or (start + length) == total:
                     return None
                 else:
-                    return {
+                    ## print("next_page_token:")
+                    token = {
                         "page": current + 1,
                         "per_page": limit,
                     }
+                    ## print(token)
+                    return token
             except Exception:
                 return None
         return None
@@ -64,7 +67,7 @@ class Auth0Stream(HttpStream, ABC):
         }
 
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
-        print(response.json())
+        ## print(response.json())
         yield from response.json().get(self.resource_name)
 
     def backoff_time(self, response: requests.Response) -> Optional[float]:
@@ -79,22 +82,24 @@ class Auth0Stream(HttpStream, ABC):
 
 # Basic incremental stream
 class IncrementalAuth0Stream(Auth0Stream, ABC):
-    min_id = ""
-
+    min_id = datetime_to_string(pendulum.DateTime.min)
+"""
     @property
-    @abstractmethod
     def cursor_field(self) -> str:
-        pass
+        return self.order_by_field
+"""
+    @property
+    def state(self) -> Mapping[str, Any]:
+        if self._cursor_value:
+            return {
+                self.cursor_field: self._cursor_value,
+            }
 
-    def get_updated_state(self, current_stream_state: MutableMapping[str, Any], latest_record: Mapping[str, Any]) -> Mapping[str, Any]:
-        min_cursor_value = self.min_id if self.min_id else datetime_to_string(pendulum.DateTime.min)
-        print(self.cursor_field)
-        return {
-            self.cursor_field: max(
-                latest_record.get(self.cursor_field, min_cursor_value),
-                current_stream_state.get(self.cursor_field, min_cursor_value),
-            )
-        }
+        return {}
+
+    @state.setter
+    def state(self, value: Mapping[str, Any]):
+        self._cursor_value = value.get(self.cursor_field, self.min_id),
 
     def request_params(
         self,
@@ -113,8 +118,6 @@ class Users(IncrementalAuth0Stream):
     min_id = datetime_to_string(pendulum.DateTime.min)
     primary_key = "user_id"
     resource_name = "users"
-    cursor_field = "updated_at"
-
 
 # Source
 class SourceAuth0(AbstractSource):
