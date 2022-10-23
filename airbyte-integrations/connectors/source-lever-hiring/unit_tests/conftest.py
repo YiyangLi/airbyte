@@ -4,10 +4,12 @@
 
 from pytest import fixture
 
+
 @fixture
 def test_config_client():
     return {
         "credentials": {
+            "auth_type": "Client",
             "client_id": "test_client_id",
             "client_secret": "test_client_secret",
             "refresh_token": "test_refresh_token",
@@ -17,11 +19,13 @@ def test_config_client():
         "environment": "Sandbox",
         "start_date": "2021-05-07T00:00:00Z",
     }
-    
+
+
 @fixture
 def test_config_key():
     return {
         "credentials": {
+            "auth_type": "Api Key",
             "api_key": "test_api_key",
         },
         "environment": "Sandbox",
